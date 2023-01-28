@@ -1,79 +1,33 @@
-use rand::prelude::*;
+mod card;
+mod player;
 
-/*
- * let game = Game::new("Aaron", "Bea", "Camille", "David");
- * => checks for minimum amount of players
- * => selects starting player
- *
- * game.setup();
- * => shuffles deck
- * => deals cards
- * => flips the top card
- * => start player turn
- *
- * let players = game.players();
- * let current_player = game.current_player();
- * let current_player_cards = current_player.cards();
- * let card_id = current_player_cards[0].id;
- *
- * let actions = game.available_actions();
- * => { Play, Draw, Skip };
- *
- * game.act(player, Actions::Play, Some(card_id));
- * => check if player is the current player
- * => check if card can be played
- * => move the card from hand to the pile
- * => mark player turn as complete
- *
- * game.act(player, Actions::Draw, None);
- * => check if player has drawn this turn
- * => draw card
- *
- * game.act(player, Actions::Skip, None);
- * => check if player has drawn this turn
- * => mark player turn as complete
- *
- * game.next();
- * => check if player turn is complete
- * => check for winner
- * => select next player
- * => loop next turn
- *
- */
+mod prelude {
+    pub use crate::card::*;
+    pub use crate::player::*;
+}
+
+use prelude::*;
+use rand::prelude::*;
 
 #[derive(PartialEq, Debug)]
 enum GameState {
     CREATED,
     STARTED,
-    PLAYING,
     FINISHED,
 }
 
-#[derive(Debug)]
-pub struct Card {
-    pub id: u32,
-    pub value: String,
-    pub color: String,
-}
-
-struct Player {
-    id: u32,
-    pub name: String,
-    pub hand: Vec<Card>,
-}
-
-impl Player {
-    //    fn draw(&self, game: &Game) {
-    //    game.deck.drain maybe?
-    //        game.deck
-    //    }
+#[derive(PartialEq, Debug)]
+pub enum Action {
+    PLAY,
+    DRAW,
+    SKIP,
 }
 
 pub struct Game {
     state: GameState,
     pub deck: Vec<Card>,
     pub pile: Vec<Card>,
-    players: Vec<Player>,
+    pub players: Vec<Player>,
     current_player_id: u32,
 }
 
@@ -82,19 +36,104 @@ impl Game {
         let players: Vec<Player> = player_names
             .iter()
             .enumerate()
-            .map(|(i, name)| Player {
-                id: (i + 1) as u32,
-                name: name.to_string(),
-                hand: vec![],
-            })
+            .map(|(i, name)| Player::new((i + 1) as u32, name.to_string()))
             .collect();
-        Some(Game {
-            state: GameState::CREATED,
-            deck: load_deck(),
-            pile: vec![],
-            current_player_id: players.first()?.id,
-            players,
-        })
+
+        if players.len() > 1 {
+            Some(Game {
+                state: GameState::CREATED,
+                deck: load_deck(),
+                pile: vec![],
+                current_player_id: players.first()?.id,
+                players,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn setup(&mut self) {
+        if self.state != GameState::CREATED {
+            println!("Incorrect game state");
+            return;
+        }
+
+        self.deck.shuffle(&mut thread_rng());
+        for player in &mut self.players {
+            for _ in 0..7 {
+                let card = self.deck.pop().unwrap();
+                player.hand.push(card);
+            }
+        }
+        self.pile.push(self.deck.pop().unwrap());
+
+        self.state = GameState::STARTED;
+    }
+
+    pub fn available_actions(&self) -> Vec<Action> {
+        match self.current_player().has_drawn {
+            true => vec![Action::PLAY, Action::SKIP],
+            false => vec![Action::PLAY, Action::DRAW],
+        }
+    }
+
+    pub fn action(&mut self, action: Action, target_id: Option<u32>) -> Option<()> {
+        if self.state != GameState::STARTED {
+            println!("Incorrect game state");
+            return None;
+        }
+        let mut player = self
+            .players
+            .iter_mut()
+            .find(|p| p.id == self.current_player_id)?;
+        match action {
+            Action::PLAY => {
+                let target_id = target_id?;
+                let target_index = player.hand.iter().position(|c| c.id == target_id)?;
+                let target_card = player.hand.get(target_index)?;
+                let top_card = self.pile.last()?;
+                if target_card.color != top_card.color && target_card.value != top_card.value {
+                    return None;
+                }
+                let card = player.hand.remove(target_index);
+                self.pile.push(card);
+                player.has_played = true;
+            }
+            Action::DRAW => {
+                if self.deck.len() == 0 {
+                    self.deck.append(&mut self.pile);
+                    self.deck.shuffle(&mut thread_rng());
+                }
+                let card = self.deck.pop()?;
+                player.hand.push(card);
+                player.has_drawn = true;
+            }
+            Action::SKIP => {
+                if player.has_drawn {
+                    player.has_played = true;
+                } else {
+                    return None;
+                }
+            }
+        }
+        Some(())
+    }
+
+    pub fn next(&mut self) -> bool {
+        if self.state != GameState::STARTED {
+            println!("Incorrect state");
+            return false;
+        }
+        if self.current_player().has_played {
+            if self.current_player().hand.len() == 0 {
+                self.state = GameState::FINISHED;
+            } else {
+                self.next_player();
+            }
+            true
+        } else {
+            false
+        }
     }
 
     fn current_player(&self) -> &Player {
@@ -105,244 +144,32 @@ impl Game {
             .unwrap()
     }
 
-    //    fn top_card(&self) -> Card {
-    //        let result = self.deck.first();
-    //        match result {
-    //            Some(card) -> dbg!(card),
-    //            None -> {
-    //                reset_pile();
-    //                self.top_card(),
-    //            }
-    //        }
-    //    }
-
-    fn reset_pile(&mut self) {
-        self.deck.append(&mut self.pile);
-        self.deck.shuffle(&mut thread_rng());
+    fn next_player(&mut self) {
+        let current_player = self
+            .players
+            .iter_mut()
+            .find(|p| p.id == self.current_player_id)
+            .unwrap();
+        current_player.has_drawn = false;
+        let current_player_index = self
+            .players
+            .iter()
+            .position(|player| player.id == self.current_player_id)
+            .unwrap();
+        let next_player_index = (current_player_index + 1) % self.players.len();
+        self.current_player_id = self.players[next_player_index].id;
     }
-
-    pub fn setup(&mut self) {
-        if self.state != GameState::CREATED {
-            println!("Incorrect state");
-            return;
-        }
-
-        self.deck.shuffle(&mut thread_rng());
-        // shuffles deck
-        // deals cards
-        // flips the top card
-        // start player turn
-    }
-}
-
-fn load_deck() -> Vec<Card> {
-    vec![
-        Card {
-            id: 1,
-            value: String::from("A"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 2,
-            value: String::from("2"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 3,
-            value: String::from("3"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 4,
-            value: String::from("4"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 5,
-            value: String::from("5"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 6,
-            value: String::from("6"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 7,
-            value: String::from("7"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 8,
-            value: String::from("8"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 9,
-            value: String::from("9"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 10,
-            value: String::from("10"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 11,
-            value: String::from("A"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 12,
-            value: String::from("2"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 13,
-            value: String::from("3"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 14,
-            value: String::from("4"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 15,
-            value: String::from("5"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 16,
-            value: String::from("6"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 17,
-            value: String::from("7"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 18,
-            value: String::from("8"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 19,
-            value: String::from("9"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 20,
-            value: String::from("10"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 21,
-            value: String::from("A"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 22,
-            value: String::from("2"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 23,
-            value: String::from("3"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 24,
-            value: String::from("4"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 25,
-            value: String::from("5"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 26,
-            value: String::from("6"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 27,
-            value: String::from("7"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 28,
-            value: String::from("8"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 29,
-            value: String::from("9"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 30,
-            value: String::from("10"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 31,
-            value: String::from("A"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 32,
-            value: String::from("2"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 33,
-            value: String::from("3"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 34,
-            value: String::from("4"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 35,
-            value: String::from("5"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 36,
-            value: String::from("6"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 37,
-            value: String::from("7"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 38,
-            value: String::from("8"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 39,
-            value: String::from("9"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 40,
-            value: String::from("10"),
-            color: String::from("green"),
-        },
-    ]
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_new_game_not_enough_players() {
+        let result = Game::new(vec!["Aaron"]);
+        assert!(result.is_none());
+    }
 
     #[test]
     fn test_create_new_game() {
@@ -364,39 +191,155 @@ mod test {
     }
 
     #[test]
-    fn test_reset_pile() {
-        let mut game = Game {
-            deck: vec![],
-            pile: vec![
-                Card {
-                    id: 0,
-                    color: String::from("red"),
-                    value: String::from("3"),
-                },
-                Card {
-                    id: 1,
-                    color: String::from("red"),
-                    value: String::from("4"),
-                },
-            ],
-            state: GameState::PLAYING,
-            players: vec![],
-            current_player_id: 0,
-        };
-
-        game.reset_pile();
-
-        assert_eq!(game.deck.len(), 2);
-        assert_eq!(game.pile.len(), 0);
+    fn test_next_player() {
+        let mut game = Game::new(vec!["Aaron", "Bea", "Cindy"]).unwrap();
+        game.next_player();
+        assert_eq!(game.current_player_id, 2);
+        game.next_player();
+        assert_eq!(game.current_player_id, 3);
+        game.next_player();
+        assert_eq!(game.current_player_id, 1);
     }
 
     #[test]
     fn test_setup() {
         let mut game = Game::new(vec!["Aaron", "Bea"]).unwrap();
-        let before = game.deck.iter().map(|c| c.id).collect::<Vec<u32>>();
         game.setup();
-        let after = game.deck.iter().map(|c| c.id).collect::<Vec<u32>>();
-        assert_ne!(before, after);
-        assert_eq!(game.deck.len(), 40);
+        assert_eq!(game.deck.len(), 40 - 15);
+        assert_eq!(game.pile.len(), 1);
+        assert_eq!(game.players.first().unwrap().hand.len(), 7);
+        assert_eq!(game.players.last().unwrap().hand.len(), 7);
+        assert_eq!(game.state, GameState::STARTED);
+    }
+
+    #[test]
+    fn test_available_actions() {
+        let mut game = Game::new(vec!["Aaron", "Bea"]).unwrap();
+        game.setup();
+        let result = game.available_actions();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result, vec![Action::PLAY, Action::DRAW]);
+    }
+
+    #[test]
+    fn test_action_play_when_wrong_card_id() {
+        let mut game = helper_create_game(1);
+        let result = game.action(Action::PLAY, Some(0));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_action_play_when_card_is_not_playable() {
+        let mut game = helper_create_game(2);
+        let result = game.action(Action::PLAY, Some(0));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_action_play_when_card_is_played() {
+        let mut game = helper_create_game(1);
+        let result = game.action(Action::PLAY, Some(2));
+        assert!(result.is_some());
+        assert_eq!(game.pile.len(), 2);
+        assert_eq!(game.pile.last().unwrap().value, "1");
+        assert_eq!(game.pile.last().unwrap().color, "yellow");
+        assert_eq!(game.players.first().unwrap().hand.len(), 0);
+        assert_eq!(game.current_player_id, 1);
+        assert!(game.players.first().unwrap().has_played);
+    }
+
+    #[test]
+    fn test_action_draw() {
+        let mut game = helper_create_game(1);
+        let result = game.action(Action::DRAW, None);
+        assert!(result.is_some());
+        assert_eq!(game.pile.len(), 1);
+        assert_eq!(game.players.first().unwrap().hand.len(), 2);
+        assert_eq!(game.players.first().unwrap().has_drawn, true);
+        assert_eq!(game.available_actions(), vec![Action::PLAY, Action::SKIP]);
+    }
+
+    #[test]
+    fn test_action_skip_when_has_not_drawn() {
+        let mut game = helper_create_game(1);
+        let result = game.action(Action::SKIP, None);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_action_skip_when_has_drawn() {
+        let mut game = helper_create_game(1);
+        game.action(Action::DRAW, None);
+        let result = game.action(Action::SKIP, None);
+        assert!(result.is_some());
+        assert_eq!(game.current_player_id, 1);
+        assert!(game.players.first().unwrap().has_played);
+    }
+
+    #[test]
+    fn test_action_next_when_player_has_not_finished_turn() {
+        let mut game = helper_create_game(1);
+        let result = game.next();
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_action_next_when_player_won_the_game() {
+        let mut game = helper_create_game(1);
+        game.action(Action::PLAY, Some(2));
+        let result = game.next();
+        assert!(result);
+        assert_eq!(game.state, GameState::FINISHED);
+    }
+
+    #[test]
+    fn test_action_next_when_player_passes_the_turn() {
+        let mut game = helper_create_game(1);
+        game.action(Action::DRAW, None);
+        game.action(Action::SKIP, None);
+        let result = game.next();
+        assert!(result);
+        assert_eq!(game.state, GameState::STARTED);
+    }
+
+    fn helper_create_game(current_player_id: u32) -> Game {
+        Game {
+            state: GameState::STARTED,
+            deck: vec![Card {
+                id: 0,
+                color: String::from("blue"),
+                value: String::from("1"),
+            }],
+            pile: vec![Card {
+                id: 1,
+                color: String::from("red"),
+                value: String::from("1"),
+            }],
+            current_player_id,
+            players: vec![
+                Player {
+                    id: 1,
+                    name: "Aaron".to_string(),
+                    hand: vec![Card {
+                        id: 2,
+                        color: String::from("yellow"),
+                        value: String::from("1"),
+                    }],
+                    has_drawn: false,
+                    has_played: false,
+                },
+                Player {
+                    id: 2,
+                    name: "Bea".to_string(),
+                    hand: vec![Card {
+                        id: 3,
+                        color: String::from("yellow"),
+                        value: String::from("9"),
+                    }],
+                    has_drawn: false,
+                    has_played: false,
+                },
+            ],
+        }
     }
 }
