@@ -1,4 +1,3 @@
-use crate::card::load_deck;
 use crate::*;
 use rand::prelude::*;
 
@@ -16,15 +15,15 @@ pub enum Action {
     SKIP,
 }
 
-pub struct Game {
+pub struct Game<'c> {
     state: GameState,
-    pub deck: Vec<Card>,
-    pub pile: Vec<Card>,
-    pub players: Vec<Player>,
+    pub deck: Vec<Card<'c>>,
+    pub pile: Vec<Card<'c>>,
+    pub players: Vec<Player<'c>>,
     current_player_id: u32,
 }
 
-impl Game {
+impl<'c> Game<'c> {
     pub fn new(player_names: Vec<&str>) -> Option<Game> {
         let players: Vec<Player> = player_names
             .iter()
@@ -35,7 +34,7 @@ impl Game {
         if players.len() > 1 {
             Some(Game {
                 state: GameState::CREATED,
-                deck: load_deck(),
+                deck: Card::load_deck(),
                 pile: vec![],
                 current_player_id: players.first()?.id,
                 players,
@@ -295,18 +294,18 @@ mod test {
         assert_eq!(game.state, GameState::STARTED);
     }
 
-    fn helper_create_game(current_player_id: u32) -> Game {
+    fn helper_create_game<'c>(current_player_id: u32) -> Game<'c> {
         Game {
             state: GameState::STARTED,
             deck: vec![Card {
                 id: 0,
-                color: String::from("blue"),
-                value: String::from("1"),
+                color: "blue",
+                value: "1",
             }],
             pile: vec![Card {
                 id: 1,
-                color: String::from("red"),
-                value: String::from("1"),
+                color: "red",
+                value: "1",
             }],
             current_player_id,
             players: vec![
@@ -315,8 +314,8 @@ mod test {
                     name: "Aaron".to_string(),
                     hand: vec![Card {
                         id: 2,
-                        color: String::from("yellow"),
-                        value: String::from("1"),
+                        color: "yellow",
+                        value: "1",
                     }],
                     has_drawn: false,
                     has_played: false,
@@ -326,8 +325,8 @@ mod test {
                     name: "Bea".to_string(),
                     hand: vec![Card {
                         id: 3,
-                        color: String::from("yellow"),
-                        value: String::from("9"),
+                        color: "yellow",
+                        value: "9",
                     }],
                     has_drawn: false,
                     has_played: false,

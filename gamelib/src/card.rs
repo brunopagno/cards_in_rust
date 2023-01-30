@@ -1,211 +1,213 @@
 #[derive(Debug)]
-pub struct Card {
+pub struct Card<'c> {
     pub id: u32,
-    pub value: String,
-    pub color: String,
+    pub value: &'c str,
+    pub color: &'c str,
 }
 
-pub(crate) fn load_deck() -> Vec<Card> {
-    vec![
-        Card {
-            id: 1,
-            value: String::from("A"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 2,
-            value: String::from("2"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 3,
-            value: String::from("3"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 4,
-            value: String::from("4"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 5,
-            value: String::from("5"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 6,
-            value: String::from("6"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 7,
-            value: String::from("7"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 8,
-            value: String::from("8"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 9,
-            value: String::from("9"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 10,
-            value: String::from("10"),
-            color: String::from("red"),
-        },
-        Card {
-            id: 11,
-            value: String::from("A"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 12,
-            value: String::from("2"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 13,
-            value: String::from("3"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 14,
-            value: String::from("4"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 15,
-            value: String::from("5"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 16,
-            value: String::from("6"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 17,
-            value: String::from("7"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 18,
-            value: String::from("8"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 19,
-            value: String::from("9"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 20,
-            value: String::from("10"),
-            color: String::from("blue"),
-        },
-        Card {
-            id: 21,
-            value: String::from("A"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 22,
-            value: String::from("2"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 23,
-            value: String::from("3"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 24,
-            value: String::from("4"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 25,
-            value: String::from("5"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 26,
-            value: String::from("6"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 27,
-            value: String::from("7"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 28,
-            value: String::from("8"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 29,
-            value: String::from("9"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 30,
-            value: String::from("10"),
-            color: String::from("yellow"),
-        },
-        Card {
-            id: 31,
-            value: String::from("A"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 32,
-            value: String::from("2"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 33,
-            value: String::from("3"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 34,
-            value: String::from("4"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 35,
-            value: String::from("5"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 36,
-            value: String::from("6"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 37,
-            value: String::from("7"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 38,
-            value: String::from("8"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 39,
-            value: String::from("9"),
-            color: String::from("green"),
-        },
-        Card {
-            id: 40,
-            value: String::from("10"),
-            color: String::from("green"),
-        },
-    ]
+impl<'c> Card<'c> {
+    pub(crate) fn load_deck() -> Vec<Card<'c>> {
+        vec![
+            Card {
+                id: 1,
+                value: "A",
+                color: "red",
+            },
+            Card {
+                id: 2,
+                value: "2",
+                color: "red",
+            },
+            Card {
+                id: 3,
+                value: "3",
+                color: "red",
+            },
+            Card {
+                id: 4,
+                value: "4",
+                color: "red",
+            },
+            Card {
+                id: 5,
+                value: "5",
+                color: "red",
+            },
+            Card {
+                id: 6,
+                value: "6",
+                color: "red",
+            },
+            Card {
+                id: 7,
+                value: "7",
+                color: "red",
+            },
+            Card {
+                id: 8,
+                value: "8",
+                color: "red",
+            },
+            Card {
+                id: 9,
+                value: "9",
+                color: "red",
+            },
+            Card {
+                id: 10,
+                value: "10",
+                color: "red",
+            },
+            Card {
+                id: 11,
+                value: "A",
+                color: "blue",
+            },
+            Card {
+                id: 12,
+                value: "2",
+                color: "blue",
+            },
+            Card {
+                id: 13,
+                value: "3",
+                color: "blue",
+            },
+            Card {
+                id: 14,
+                value: "4",
+                color: "blue",
+            },
+            Card {
+                id: 15,
+                value: "5",
+                color: "blue",
+            },
+            Card {
+                id: 16,
+                value: "6",
+                color: "blue",
+            },
+            Card {
+                id: 17,
+                value: "7",
+                color: "blue",
+            },
+            Card {
+                id: 18,
+                value: "8",
+                color: "blue",
+            },
+            Card {
+                id: 19,
+                value: "9",
+                color: "blue",
+            },
+            Card {
+                id: 20,
+                value: "10",
+                color: "blue",
+            },
+            Card {
+                id: 21,
+                value: "A",
+                color: "yellow",
+            },
+            Card {
+                id: 22,
+                value: "2",
+                color: "yellow",
+            },
+            Card {
+                id: 23,
+                value: "3",
+                color: "yellow",
+            },
+            Card {
+                id: 24,
+                value: "4",
+                color: "yellow",
+            },
+            Card {
+                id: 25,
+                value: "5",
+                color: "yellow",
+            },
+            Card {
+                id: 26,
+                value: "6",
+                color: "yellow",
+            },
+            Card {
+                id: 27,
+                value: "7",
+                color: "yellow",
+            },
+            Card {
+                id: 28,
+                value: "8",
+                color: "yellow",
+            },
+            Card {
+                id: 29,
+                value: "9",
+                color: "yellow",
+            },
+            Card {
+                id: 30,
+                value: "10",
+                color: "yellow",
+            },
+            Card {
+                id: 31,
+                value: "A",
+                color: "green",
+            },
+            Card {
+                id: 32,
+                value: "2",
+                color: "green",
+            },
+            Card {
+                id: 33,
+                value: "3",
+                color: "green",
+            },
+            Card {
+                id: 34,
+                value: "4",
+                color: "green",
+            },
+            Card {
+                id: 35,
+                value: "5",
+                color: "green",
+            },
+            Card {
+                id: 36,
+                value: "6",
+                color: "green",
+            },
+            Card {
+                id: 37,
+                value: "7",
+                color: "green",
+            },
+            Card {
+                id: 38,
+                value: "8",
+                color: "green",
+            },
+            Card {
+                id: 39,
+                value: "9",
+                color: "green",
+            },
+            Card {
+                id: 40,
+                value: "10",
+                color: "green",
+            },
+        ]
+    }
 }
