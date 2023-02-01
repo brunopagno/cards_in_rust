@@ -15,15 +15,16 @@ pub enum Action {
     SKIP,
 }
 
-pub struct Game<'c> {
+pub struct Game<'g> {
     state: GameState,
-    pub deck: Vec<Card<'c>>,
-    pub pile: Vec<Card<'c>>,
-    pub players: Vec<Player<'c>>,
+    cards: Vec<Card<'g>>,
+    pub(crate) deck: Vec<u32>,
+    pub(crate) pile: Vec<u32>,
+    pub players: Vec<Player>,
     current_player_id: u32,
 }
 
-impl<'c> Game<'c> {
+impl<'g> Game<'g> {
     pub fn new(player_names: Vec<&str>) -> Option<Game> {
         let players: Vec<Player> = player_names
             .iter()
@@ -34,8 +35,9 @@ impl<'c> Game<'c> {
         if players.len() > 1 {
             Some(Game {
                 state: GameState::CREATED,
-                deck: Card::load_deck(),
-                pile: vec![],
+                cards: Card::load_deck(),
+                deck: Vec::new(),
+                pile: Vec::new(),
                 current_player_id: players.first()?.id,
                 players,
             })
@@ -50,11 +52,12 @@ impl<'c> Game<'c> {
             return;
         }
 
+        self.deck = self.cards.iter().map(|c| c.id).collect();
         self.deck.shuffle(&mut thread_rng());
         for player in &mut self.players {
             for _ in 0..7 {
-                let card = self.deck.pop().unwrap();
-                player.hand.push(card);
+                let card_id = self.deck.pop().unwrap();
+                player.hand.push(card_id);
             }
         }
         self.pile.push(self.deck.pop().unwrap());
@@ -81,13 +84,15 @@ impl<'c> Game<'c> {
         match action {
             Action::PLAY => {
                 let target_id = target_id?;
-                let target_index = player.hand.iter().position(|c| c.id == target_id)?;
-                let target_card = player.hand.get(target_index)?;
-                let top_card = self.pile.last()?;
+                let target_card = self.cards.iter().find(|c| c.id == target_id)?;
+                let top_pile_id = *self.pile.last()?;
+                let top_card = self.cards.iter().find(|c| c.id == top_pile_id)?;
                 if target_card.color != top_card.color && target_card.value != top_card.value {
                     return None;
                 }
-                let card = player.hand.remove(target_index);
+                let card = player
+                    .hand
+                    .remove(player.hand.iter().position(|cid| *cid == target_id)?);
                 self.pile.push(card);
                 player.has_played = true;
             }
@@ -167,7 +172,7 @@ mod test {
     fn test_create_new_game() {
         let game = Game::new(vec!["Aaron", "Bea"]).unwrap();
         assert_eq!(game.state, GameState::CREATED);
-        assert_eq!(game.deck.len(), 40);
+        assert_eq!(game.deck.len(), 0);
         assert_eq!(game.pile.len(), 0);
         assert_eq!(game.players.len(), 2);
         assert_eq!(game.current_player_id, game.players.first().unwrap().id);
@@ -233,8 +238,7 @@ mod test {
         let result = game.action(Action::PLAY, Some(2));
         assert!(result.is_some());
         assert_eq!(game.pile.len(), 2);
-        assert_eq!(game.pile.last().unwrap().value, "1");
-        assert_eq!(game.pile.last().unwrap().color, "yellow");
+        assert_eq!(*game.pile.last().unwrap(), 2);
         assert_eq!(game.players.first().unwrap().hand.len(), 0);
         assert_eq!(game.current_player_id, 1);
         assert!(game.players.first().unwrap().has_played);
@@ -297,37 +301,43 @@ mod test {
     fn helper_create_game<'c>(current_player_id: u32) -> Game<'c> {
         Game {
             state: GameState::STARTED,
-            deck: vec![Card {
-                id: 0,
-                color: "blue",
-                value: "1",
-            }],
-            pile: vec![Card {
-                id: 1,
-                color: "red",
-                value: "1",
-            }],
+            cards: vec![
+                Card {
+                    id: 0,
+                    color: "blue",
+                    value: "1",
+                },
+                Card {
+                    id: 1,
+                    color: "red",
+                    value: "1",
+                },
+                Card {
+                    id: 2,
+                    color: "yellow",
+                    value: "1",
+                },
+                Card {
+                    id: 3,
+                    color: "yellow",
+                    value: "9",
+                },
+            ],
+            pile: vec![0],
+            deck: vec![1],
             current_player_id,
             players: vec![
                 Player {
                     id: 1,
                     name: "Aaron".to_string(),
-                    hand: vec![Card {
-                        id: 2,
-                        color: "yellow",
-                        value: "1",
-                    }],
+                    hand: vec![2],
                     has_drawn: false,
                     has_played: false,
                 },
                 Player {
                     id: 2,
                     name: "Bea".to_string(),
-                    hand: vec![Card {
-                        id: 3,
-                        color: "yellow",
-                        value: "9",
-                    }],
+                    hand: vec![3],
                     has_drawn: false,
                     has_played: false,
                 },

@@ -1,15 +1,13 @@
-use crate::card::Card;
-
-pub struct Player<'c> {
+pub struct Player {
     pub id: u32,
     pub name: String,
-    pub hand: Vec<Card<'c>>,
+    pub hand: Vec<u32>,
     pub(crate) has_drawn: bool,
     pub(crate) has_played: bool,
 }
 
-impl<'c> Player<'c> {
-    pub(crate) fn new(id: u32, name: String) -> Player<'c> {
+impl Player {
+    pub(crate) fn new(id: u32, name: String) -> Player {
         Player {
             id,
             name,
