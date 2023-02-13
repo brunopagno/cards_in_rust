@@ -1,7 +1,21 @@
-#[get("/lobbies")]
-pub(crate) fn all() -> &'static str {
-    "All lobbies"
-}
+// use rocket::http::Status;
+// use rocket::response::{content, status};
+
+// #[get("/lobbies")]
+// pub(crate) fn all() -> status::Custom<content::RawJson<&'static str>> {
+//     status::Custom(
+//         Status::Ok,
+//         content::RawJson(
+//             r#"
+//                 [
+//                     {
+//                         "title": "My favourite lobby"
+//                     }
+//                 ]
+//             "#,
+//         ),
+//     )
+// }
 
 #[get("/lobbies/<id>")]
 pub(crate) fn get(id: u32) -> String {

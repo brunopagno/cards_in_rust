@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Common/gobacktexture.png" type="Texture" id=1]
+[ext_resource path="res://InGame/InGame.gd" type="Script" id=2]
+
+[node name="InGame" type="Node2D"]
+script = ExtResource( 2 )
+
+[node name="MyButton" type="Node2D" parent="."]
+
+[node name="GoBack" type="Button" parent="MyButton"]
+margin_left = 348.0
+margin_top = 162.0
+margin_right = 488.0
+margin_bottom = 200.0
+icon = ExtResource( 1 )
+
+[connection signal="pressed" from="MyButton/GoBack" to="." method="_on_GoBack_pressed"]
