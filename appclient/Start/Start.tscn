@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=3 format=2]
 
 [ext_resource path="res://Start/Start.gd" type="Script" id=1]
+[ext_resource path="res://cards_theme.tres" type="Theme" id=2]
 
 [node name="Start" type="Control"]
 anchor_right = 1.0
@@ -13,9 +14,9 @@ anchor_bottom = 1.0
 
 [node name="HBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 margin_left = 432.0
-margin_top = 276.0
+margin_top = 275.0
 margin_right = 592.0
-margin_bottom = 324.0
+margin_bottom = 325.0
 
 [node name="LineEdit" type="LineEdit" parent="CenterContainer/HBoxContainer"]
 margin_right = 160.0
@@ -28,7 +29,8 @@ caret_blink_speed = 0.5
 [node name="Button" type="Button" parent="CenterContainer/HBoxContainer"]
 margin_top = 28.0
 margin_right = 160.0
-margin_bottom = 48.0
+margin_bottom = 50.0
+theme = ExtResource( 2 )
 text = "Confirm"
 
 [connection signal="pressed" from="CenterContainer/HBoxContainer/Button" to="." method="_on_Confirm_pressed"]
