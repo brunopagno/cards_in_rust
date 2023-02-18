@@ -9,3 +9,5 @@ func _on_Confirm_pressed():
 		GameState.player_name = name_input.text
 		print("the game state was set to => ", GameState.player_name)
 		get_tree().change_scene("res://MainMenu/MainMenu.tscn")
+	else:
+		$CenterContainer/HBoxContainer/LineEdit/ErrorLabel.visible = true
